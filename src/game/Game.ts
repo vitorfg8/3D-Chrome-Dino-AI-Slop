@@ -38,7 +38,7 @@ export class Game {
     this.species = species ?? 'trex'
     this.picking = species === null
     this.desert = new Desert(stage.scene, models.scenery)
-    this.obstacles = new Obstacles(stage.scene, models.cactusSmall, models.cactusLarge)
+    this.obstacles = new Obstacles(stage.scene, models.cactusSmall, models.cactusLarge, models.pterosaur)
     this.dino = new Dino(stage.scene, models.dinos, this.species)
     this.dino.reset()
   }
@@ -95,7 +95,7 @@ export class Game {
       this.score = Math.floor(this.distance * CONFIG.scoreScale)
       this.dino.update(dt, 'run', input.jump, input.duck, this.speed)
       this.obstacles.update(dt, this.speed)
-      const order = this.spawner.pull(this.distance, this.speed, this.score)
+      const order = this.spawner.pull(this.distance, this.speed, this.score, this.bodyGap())
       if (order) this.obstacles.spawn(order, CONFIG.spawnX)
       if (this.obstacles.hits(this.dino.hitboxes())) this.crash()
       const mark = Math.floor(this.score / CONFIG.blinkEvery)
@@ -114,6 +114,11 @@ export class Game {
     this.desert.setNight(this.night)
     this.hud.render(this.mode satisfies HudMode, this.score, this.highScore, this.night > 0.45, this.flashScore)
     this.stage.render(dt)
+  }
+
+  private bodyGap(): number {
+    if (this.species !== 'apatosaurus') return 0
+    return Math.max(0, this.dino.bodyLength - 4) * 0.55
   }
 
   private begin(): void {

@@ -19,3 +19,4 @@ O código deste jogo está sob a licença MIT. Veja [LICENSE](LICENSE). Os model
 - Cactus (saguaro) por Poly by Google, CC-BY 3.0. [poly.pizza/m/1_3Ur2-LAs8](https://poly.pizza/m/1_3Ur2-LAs8)
 - Barrel cactus por Poly by Google, CC-BY 3.0. [poly.pizza/m/5-hrumGDq1K](https://poly.pizza/m/5-hrumGDq1K)
 - Cactus por jeremy, CC-BY 3.0. [poly.pizza/m/fr1vXosiRgr](https://poly.pizza/m/fr1vXosiRgr)
+- Pterossauro (Pterablocktyls) por [Hoai Nguyen](https://poly.pizza/u/Hoai%20Nguyen), CC-BY. [poly.pizza/m/1tuiNTr4-MX](https://poly.pizza/m/1tuiNTr4-MX)

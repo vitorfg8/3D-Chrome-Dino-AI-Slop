@@ -3,12 +3,9 @@ import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { CONFIG, type Aabb } from '../game/config'
 import type { SpeciesId } from '../assets/species'
+import { makeEye } from './eyes'
 
 const TARGET_HEIGHT = 1.65
-
-const eyeWhite = new THREE.MeshStandardMaterial({ color: 0xf3efe4, roughness: 0.25 })
-const pupilMat = new THREE.MeshStandardMaterial({ color: 0x140e0a, roughness: 0.3 })
-const glintMat = new THREE.MeshBasicMaterial({ color: 0xffffff })
 
 type ClipRole = 'idle' | 'run' | 'jump' | 'dead'
 
@@ -19,6 +16,7 @@ export class Dino {
   onGround = true
   ducking = false
   justLanded = false
+  bodyLength = 2.2
 
   private readonly rig = new THREE.Group()
   private readonly blob: THREE.Mesh
@@ -75,6 +73,7 @@ export class Dino {
     mixer.update(0)
     this.rig.add(model)
     fitSkeleton(model)
+    this.bodyLength = skinnedSpanX(model)
     this.eyes = attachEyes(model)
     this.rig.rotation.z = 0
     this.rig.position.y = 0
@@ -291,6 +290,33 @@ function fitSkeleton(model: THREE.Object3D): void {
   if (Number.isFinite(sole)) model.position.y -= sole
 }
 
+function skinnedSpanX(root: THREE.Object3D): number {
+  const point = new THREE.Vector3()
+  let min = Infinity
+  let max = -Infinity
+  let found = false
+  root.updateMatrixWorld(true)
+  root.traverse((obj) => {
+    const mesh = obj as THREE.SkinnedMesh
+    if (!mesh.isSkinnedMesh) return
+    const position = mesh.geometry.attributes.position
+    const step = Math.max(1, Math.floor(position.count / 800))
+    for (let i = 0; i < position.count; i += step) {
+      point.fromBufferAttribute(position, i)
+      mesh.applyBoneTransform(i, point)
+      mesh.localToWorld(point)
+      found = true
+      if (point.x < min) min = point.x
+      if (point.x > max) max = point.x
+    }
+  })
+  if (!found) {
+    const size = new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3())
+    return size.x
+  }
+  return max - min
+}
+
 function skinnedMinY(root: THREE.Object3D): number {
   const point = new THREE.Vector3()
   let min = Infinity
@@ -399,13 +425,3 @@ function localDirection(head: THREE.Object3D, worldDir: THREE.Vector3, length: n
   return ahead.sub(here).normalize().multiplyScalar(length)
 }
 
-function makeEye(radius: number, pupilOffset: THREE.Vector3): THREE.Group {
-  const group = new THREE.Group()
-  const white = new THREE.Mesh(new THREE.SphereGeometry(radius, 14, 12), eyeWhite)
-  const pupil = new THREE.Mesh(new THREE.SphereGeometry(radius * 0.46, 10, 8), pupilMat)
-  pupil.position.copy(pupilOffset)
-  const glint = new THREE.Mesh(new THREE.SphereGeometry(radius * 0.16, 6, 5), glintMat)
-  glint.position.copy(pupilOffset).add(new THREE.Vector3(radius * 0.16, radius * 0.18, 0))
-  group.add(white, pupil, glint)
-  return group
-}
