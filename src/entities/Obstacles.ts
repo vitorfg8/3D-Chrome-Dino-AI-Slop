@@ -1,8 +1,6 @@
 import * as THREE from 'three'
 import { CONFIG, overlap, type Aabb } from '../game/config'
 import type { SpawnOrder } from '../game/Spawner'
-import { makeCactus } from './cactus'
-
 export type ObstacleKind = 'cactus-small' | 'cactus-large' | 'ptero'
 
 interface Item {
@@ -15,12 +13,6 @@ interface Item {
   baseY: number
   phase: number
 }
-
-const cactusMat = new THREE.MeshStandardMaterial({
-  color: 0x2f7a3a,
-  roughness: 0.78,
-  metalness: 0.02,
-})
 
 const pteroBody = new THREE.MeshStandardMaterial({
   color: 0xa56b42,
@@ -54,7 +46,11 @@ export class Obstacles {
   }
   private readonly live: Item[] = []
 
-  constructor(private readonly scene: THREE.Scene) {}
+  constructor(
+    private readonly scene: THREE.Scene,
+    private readonly cactusSmall: THREE.Object3D,
+    private readonly cactusLarge: THREE.Object3D,
+  ) {}
 
   spawn(order: SpawnOrder, x: number): void {
     const pool = this.pools[order.kind]
@@ -108,10 +104,9 @@ export class Obstacles {
       wingL = built.wingL
       wingR = built.wingR
     } else {
-      const radius = kind === 'cactus-small' ? 0.12 : 0.18
-      const height = kind === 'cactus-small' ? CONFIG.smallHeight : CONFIG.largeHeight
+      const template = kind === 'cactus-small' ? this.cactusSmall : this.cactusLarge
       for (let i = 0; i < 3; i += 1) {
-        const plant = makeCactus(radius, height, cactusMat)
+        const plant = template.clone(true)
         plant.visible = false
         group.add(plant)
         plants.push(plant)

@@ -5,6 +5,8 @@ import { Obstacles } from '../entities/Obstacles'
 import { Desert } from '../world/Desert'
 import type { Stage } from '../render/Stage'
 import { Hud, type HudMode } from '../ui/Hud'
+import type { ModelLibrary } from '../assets/loadModels'
+import type { SpeciesId } from '../assets/species'
 
 type Mode = 'waiting' | 'running' | 'crashed'
 
@@ -25,11 +27,39 @@ export class Game {
   private crashTimer = 0
   private milestone = 0
   private flashScore = false
+  private picking: boolean
+  private species: SpeciesId
 
-  constructor(private readonly stage: Stage) {
-    this.desert = new Desert(stage.scene)
-    this.obstacles = new Obstacles(stage.scene)
-    this.dino = new Dino(stage.scene)
+  constructor(
+    private readonly stage: Stage,
+    models: ModelLibrary,
+    species: SpeciesId | null,
+  ) {
+    this.species = species ?? 'trex'
+    this.picking = species === null
+    this.desert = new Desert(stage.scene, models.scenery)
+    this.obstacles = new Obstacles(stage.scene, models.cactusSmall, models.cactusLarge)
+    this.dino = new Dino(stage.scene, models.dinos, this.species)
+    this.dino.reset()
+  }
+
+  currentSpecies(): SpeciesId {
+    return this.species
+  }
+
+  preview(species: SpeciesId): void {
+    this.species = species
+    this.picking = true
+    this.dino.use(species)
+    this.dino.reset()
+  }
+
+  confirm(): void {
+    this.picking = false
+    this.mode = 'waiting'
+    this.speed = 0
+    this.night = 0
+    this.obstacles.clear()
     this.dino.reset()
   }
 
@@ -39,6 +69,16 @@ export class Game {
 
     if (document.hidden) {
       this.stage.render(0)
+      return
+    }
+
+    if (this.picking) {
+      this.dino.update(dt, 'idle', false, false, 0)
+      this.desert.update(dt, 0)
+      this.stage.setNight(this.night)
+      this.desert.setNight(this.night)
+      this.hud.render('waiting', 0, this.highScore, false, false)
+      this.stage.render(dt)
       return
     }
 
@@ -133,6 +173,7 @@ class Input {
       if (isDuck(event)) this.keyboardDuck = false
     })
     window.addEventListener('pointerdown', (event) => {
+      if (event.target instanceof Element && event.target.closest('#picker, #swap')) return
       this.pointerEdge = true
       this.pointerUp = event.clientY < window.innerHeight * 0.5
       if (!this.pointerUp) this.pointerDuck = true

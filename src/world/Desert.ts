@@ -1,6 +1,4 @@
 import * as THREE from 'three'
-import { makeCactus } from '../entities/cactus'
-
 const PERIOD = 40
 
 interface Prop {
@@ -41,7 +39,10 @@ export class Desert {
   private readonly dayBottom = new THREE.Color('#e4c196')
   private readonly nightBottom = new THREE.Color('#12151c')
 
-  constructor(private readonly scene: THREE.Scene) {
+  constructor(
+    private readonly scene: THREE.Scene,
+    private readonly scenery: THREE.Object3D[],
+  ) {
     this.sky = new THREE.ShaderMaterial({
       side: THREE.BackSide,
       depthWrite: false,
@@ -238,7 +239,6 @@ export class Desert {
     const mesaMat = new THREE.MeshStandardMaterial({ color: 0xa85a3c, roughness: 0.88, flatShading: true })
     const farMat = new THREE.MeshStandardMaterial({ color: 0x8d7360, roughness: 0.95, flatShading: true })
     const bushMat = new THREE.MeshStandardMaterial({ color: 0x6a7044, roughness: 0.9, flatShading: true })
-    const sceneryCactus = new THREE.MeshStandardMaterial({ color: 0x3e6840, roughness: 0.84 })
     const cloudMat = new THREE.MeshBasicMaterial({
       color: 0xfff8f0,
       transparent: true,
@@ -253,12 +253,8 @@ export class Desert {
     this.addMesa(9, -11, 4.1, 3.1, mesaMat)
     this.addMesa(24, -8, 2.6, 1.8, mesaMat)
 
-    const heroCactus = makeCactus(0.2, 1.35, sceneryCactus)
-    heroCactus.position.set(6.2, 0, -5.4)
-    this.track(heroCactus, 6.2, 78, 1)
-    const heroCactusB = makeCactus(0.16, 1.05, sceneryCactus)
-    heroCactusB.position.set(10.4, 0, -6.8)
-    this.track(heroCactusB, 10.4, 78, 1)
+    this.placePlant(0, 6.2, -5.4, 1.15)
+    this.placePlant(2, 10.4, -6.8, 0.9)
 
     for (let i = 0; i < 5; i += 1) {
       const x = -8 + rand() * 90
@@ -273,10 +269,7 @@ export class Desert {
     for (let i = 0; i < 8; i += 1) {
       const x = 12 + rand() * 70
       const z = (rand() > 0.5 ? 1 : -1) * (1.7 + rand() * 3.5)
-      const plant = makeCactus(0.1 + rand() * 0.06, 0.7 + rand() * 0.6, sceneryCactus)
-      plant.position.set(x, 0, z)
-      plant.rotation.y = rand() * Math.PI
-      this.track(plant, x, 84, 1)
+      this.placePlant(i, x, z, 0.65 + rand() * 0.55)
     }
     for (let i = 0; i < 7; i += 1) {
       const bush = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28 + rand() * 0.2, 0), bushMat)
@@ -342,6 +335,15 @@ export class Desert {
     mesh.position.set(x, radius * 0.22, z)
     mesh.rotation.y = x * 0.2
     this.track(mesh, x, 100, 1)
+  }
+
+  private placePlant(index: number, x: number, z: number, scale: number): void {
+    const source = this.scenery[index % this.scenery.length]
+    const plant = source.clone(true)
+    plant.position.set(x, 0, z)
+    plant.rotation.y = x * 1.7
+    plant.scale.multiplyScalar(scale)
+    this.track(plant, x, 84, 1)
   }
 
   private track(mesh: THREE.Object3D, x: number, span: number, factor: number): void {
