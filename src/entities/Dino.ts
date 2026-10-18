@@ -286,6 +286,27 @@ function fitSkeleton(model: THREE.Object3D): void {
   model.position.y -= fitted.min.y
   model.position.x -= (fitted.min.x + fitted.max.x) / 2
   model.position.z -= (fitted.min.z + fitted.max.z) / 2
+  model.updateMatrixWorld(true)
+  const sole = skinnedMinY(model)
+  if (Number.isFinite(sole)) model.position.y -= sole
+}
+
+function skinnedMinY(root: THREE.Object3D): number {
+  const point = new THREE.Vector3()
+  let min = Infinity
+  root.updateMatrixWorld(true)
+  root.traverse((obj) => {
+    const mesh = obj as THREE.SkinnedMesh
+    if (!mesh.isSkinnedMesh) return
+    const position = mesh.geometry.attributes.position
+    for (let i = 0; i < position.count; i += 1) {
+      point.fromBufferAttribute(position, i)
+      mesh.applyBoneTransform(i, point)
+      mesh.localToWorld(point)
+      if (point.y < min) min = point.y
+    }
+  })
+  return min
 }
 
 function boneBounds(root: THREE.Object3D): THREE.Box3 {
@@ -335,8 +356,39 @@ function attachEyes(model: THREE.Object3D): THREE.Group | null {
     const eye = makeEye(radius * (sign > 0 ? 1 : 0.82), localDirection(head, towardCamera, radius * 0.7))
     eye.position.copy(head.worldToLocal(spot))
     eyes.add(eye)
+    if (sign > 0) pushEyeToSurface(model, head, eye, radius)
   }
   return eyes
+}
+
+function pushEyeToSurface(
+  model: THREE.Object3D,
+  head: THREE.Object3D,
+  eye: THREE.Object3D,
+  radius: number,
+): void {
+  const eyeWorld = new THREE.Vector3()
+  eye.getWorldPosition(eyeWorld)
+  const worldRadius = radius * Math.abs(head.getWorldScale(new THREE.Vector3()).x || 1)
+  const point = new THREE.Vector3()
+  let surface = -Infinity
+  model.updateMatrixWorld(true)
+  model.traverse((obj) => {
+    const mesh = obj as THREE.SkinnedMesh
+    if (!mesh.isSkinnedMesh) return
+    const position = mesh.geometry.attributes.position
+    const step = Math.max(1, Math.floor(position.count / 600))
+    for (let i = 0; i < position.count; i += step) {
+      point.fromBufferAttribute(position, i)
+      mesh.applyBoneTransform(i, point)
+      mesh.localToWorld(point)
+      if (Math.abs(point.x - eyeWorld.x) > 0.45 || Math.abs(point.y - eyeWorld.y) > 0.35) continue
+      if (point.z > surface) surface = point.z
+    }
+  })
+  if (!Number.isFinite(surface) || surface < eyeWorld.z) return
+  eyeWorld.z = surface + worldRadius * 0.35
+  eye.position.copy(head.worldToLocal(eyeWorld))
 }
 
 function localDirection(head: THREE.Object3D, worldDir: THREE.Vector3, length: number): THREE.Vector3 {

@@ -51,8 +51,8 @@ function prepareProp(source: THREE.Object3D, height: number): THREE.Group {
   holder.add(inner)
   holder.updateMatrixWorld(true)
   const size = new THREE.Box3().setFromObject(holder).getSize(new THREE.Vector3())
-  const upright = size.y >= size.x && size.y >= size.z
-  if (!upright) inner.rotation.x = -Math.PI / 2
+  const footprint = Math.max(size.x, size.z)
+  if (size.y < footprint * 0.45) inner.rotation.x = -Math.PI / 2
   holder.updateMatrixWorld(true)
   const measured = new THREE.Box3().setFromObject(holder).getSize(new THREE.Vector3())
   holder.scale.setScalar(height / Math.max(measured.y, 0.001))

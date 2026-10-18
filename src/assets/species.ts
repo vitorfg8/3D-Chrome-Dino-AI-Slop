@@ -1,10 +1,10 @@
 export const SPECIES = [
-  { id: 'trex', label: 'Tiranossauro', file: 'trex.glb' },
-  { id: 'velociraptor', label: 'Velociraptor', file: 'velociraptor.glb' },
-  { id: 'triceratops', label: 'Tricerátopo', file: 'triceratops.glb' },
-  { id: 'stegosaurus', label: 'Estegossauro', file: 'stegosaurus.glb' },
-  { id: 'parasaurolophus', label: 'Parassaurolofo', file: 'parasaurolophus.glb' },
-  { id: 'apatosaurus', label: 'Apatossauro', file: 'apatosaurus.glb' },
+  { id: 'trex', file: 'trex.glb' },
+  { id: 'velociraptor', file: 'velociraptor.glb' },
+  { id: 'triceratops', file: 'triceratops.glb' },
+  { id: 'stegosaurus', file: 'stegosaurus.glb' },
+  { id: 'parasaurolophus', file: 'parasaurolophus.glb' },
+  { id: 'apatosaurus', file: 'apatosaurus.glb' },
 ] as const
 
 export type SpeciesId = (typeof SPECIES)[number]['id']

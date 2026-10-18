@@ -173,7 +173,7 @@ class Input {
       if (isDuck(event)) this.keyboardDuck = false
     })
     window.addEventListener('pointerdown', (event) => {
-      if (event.target instanceof Element && event.target.closest('#picker, #swap')) return
+      if (event.target instanceof Element && event.target.closest('#picker, #swap, #lang')) return
       this.pointerEdge = true
       this.pointerUp = event.clientY < window.innerHeight * 0.5
       if (!this.pointerUp) this.pointerDuck = true

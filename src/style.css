@@ -245,3 +245,41 @@ body.picking #center {
   background: #7c8b52;
   color: #fffaf2;
 }
+
+#lang {
+  position: fixed;
+  top: 16px;
+  left: 18px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  font-family: ui-monospace, "DejaVu Sans Mono", "Liberation Mono", "Courier New", monospace;
+}
+
+#lang-toggle,
+#lang-panel button {
+  font: inherit;
+  cursor: pointer;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 246, 232, 0.94);
+  color: #3a3a3a;
+  padding: 8px 12px;
+}
+
+#lang-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#lang-panel[hidden] {
+  display: none;
+}
+
+#lang-panel button.is-selected {
+  background: #7c8b52;
+  color: #fffaf2;
+}

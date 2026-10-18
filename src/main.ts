@@ -4,6 +4,7 @@ import { Game } from './game/Game'
 import { loadModels } from './assets/loadModels'
 import { readSpecies, saveSpecies } from './assets/species'
 import { Picker } from './ui/Picker'
+import { LangMenu } from './ui/LangMenu'
 
 const app = document.getElementById('app')
 if (!app) throw new Error('Container #app ausente')
@@ -13,6 +14,7 @@ if (stage.ok) {
   const models = await loadModels()
   const saved = readSpecies()
   const game = new Game(stage, models, saved)
+  new LangMenu()
   const picker = new Picker(
     (id) => game.preview(id),
     (id) => {

@@ -1,3 +1,5 @@
+import { t } from '../i18n'
+
 export type HudMode = 'waiting' | 'running' | 'crashed'
 
 export class Hud {
@@ -30,12 +32,14 @@ export class Hud {
     this.root.className = night ? `${mode} night` : mode
     this.scoreEl.textContent = digits(score)
     this.hiEl.textContent = high > 0 ? `HI ${digits(high)}` : ''
+    const swap = document.getElementById('swap')
+    if (swap) swap.textContent = t('swap')
     if (mode === 'waiting') {
-      this.titleEl.textContent = 'ESPAÇO PARA COMEÇAR'
-      this.hintEl.textContent = 'seta para cima pula · seta para baixo agacha'
+      this.titleEl.textContent = t('startTitle')
+      this.hintEl.textContent = t('startHint')
     } else if (mode === 'crashed') {
-      this.titleEl.textContent = 'GAME OVER'
-      this.hintEl.textContent = 'espaço para reiniciar'
+      this.titleEl.textContent = t('gameOver')
+      this.hintEl.textContent = t('restartHint')
     }
     if (flashScore) {
       this.scoreEl.classList.remove('flash')

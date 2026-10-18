@@ -1,4 +1,5 @@
 import { SPECIES, type SpeciesId } from '../assets/species'
+import { onLocale, speciesName, t } from '../i18n'
 
 export class Picker {
   private readonly root: HTMLElement
@@ -15,26 +16,37 @@ export class Picker {
     card.className = 'picker-card'
     const title = document.createElement('p')
     title.className = 'picker-title'
-    title.textContent = 'ESCOLHA SEU DINOSSAURO'
+    title.dataset.i18n = 'pickTitle'
     const grid = document.createElement('div')
     grid.className = 'picker-grid'
     for (const species of SPECIES) {
       const button = document.createElement('button')
       button.type = 'button'
       button.dataset.species = species.id
-      button.textContent = species.label
       button.addEventListener('click', () => this.select(species.id))
       grid.append(button)
     }
     const confirm = document.createElement('button')
     confirm.type = 'button'
     confirm.id = 'picker-confirm'
-    confirm.textContent = 'JOGAR'
     confirm.addEventListener('click', () => this.onConfirm(this.selected))
     card.append(title, grid, confirm)
     root.append(card)
     document.body.append(root)
     this.root = root
+    this.refresh()
+    onLocale(() => this.refresh())
+  }
+
+  private refresh(): void {
+    const title = this.root.querySelector('.picker-title')
+    if (title) title.textContent = t('pickTitle')
+    const confirm = this.root.querySelector('#picker-confirm')
+    if (confirm) confirm.textContent = t('play')
+    for (const button of this.root.querySelectorAll<HTMLButtonElement>('[data-species]')) {
+      const id = button.dataset.species
+      if (id) button.textContent = speciesName(id as SpeciesId)
+    }
     this.mark()
   }
 
