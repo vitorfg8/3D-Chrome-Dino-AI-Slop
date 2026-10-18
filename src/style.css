@@ -1,0 +1,145 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #1a120c;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#app canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+#hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  font-family: ui-monospace, "DejaVu Sans Mono", "Liberation Mono", "Courier New", monospace;
+  color: #3a3a3a;
+  text-shadow: 0 1px 0 rgba(255, 248, 235, 0.35);
+}
+
+#grade,
+#vignette,
+#flash {
+  position: absolute;
+  inset: 0;
+}
+
+#grade {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 196, 120, 0.16),
+    rgba(160, 90, 40, 0.05) 42%,
+    rgba(40, 18, 0, 0.2)
+  );
+  mix-blend-mode: soft-light;
+}
+
+#vignette {
+  background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.42) 100%);
+}
+
+#flash {
+  background: #fff8ee;
+  opacity: 0;
+}
+
+#flash.on {
+  animation: hitflash 0.38s ease-out;
+}
+
+@keyframes hitflash {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+#top {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  display: flex;
+  gap: 18px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+#score.flash {
+  animation: scoreflash 0.12s steps(1) 4;
+}
+
+@keyframes scoreflash {
+  50% {
+    opacity: 0;
+  }
+}
+
+#center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0 24px;
+}
+
+#hud.waiting #center {
+  justify-content: flex-end;
+  padding-bottom: 11vh;
+}
+
+#hud.running #center {
+  display: none;
+}
+
+#hud.crashed #center {
+  justify-content: center;
+  transform: translateY(-8vh);
+}
+
+#title {
+  margin: 0;
+  font-size: clamp(26px, 4vw, 44px);
+  letter-spacing: 0.14em;
+  font-weight: 700;
+}
+
+#hint {
+  margin: 10px 0 0;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+}
+
+#hud.night {
+  color: #f4f4f4;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+}
+
+#hud.night #grade {
+  opacity: 0.45;
+  background: linear-gradient(180deg, rgba(30, 48, 90, 0.4), rgba(0, 0, 0, 0.28));
+}
+
+.fail {
+  color: #fff;
+  font-family: ui-monospace, monospace;
+  padding: 24px;
+}
