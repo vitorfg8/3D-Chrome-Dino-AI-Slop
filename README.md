@@ -1,4 +1,4 @@
-# Dino 2.5D
+# 3D Chrome Dino AI Slop
 
 Chrome Dino, 3D AI slop version. Exactly that.
 
