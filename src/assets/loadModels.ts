@@ -78,26 +78,29 @@ function preparePterosaur(source: THREE.Object3D): THREE.Group {
   for (const part of [body, wingA, wingB]) styleFlat(part)
 
   const spin = new THREE.Group()
-  spin.rotation.y = Math.PI
   spin.add(body, wingA, wingB)
+  alignFacingDino(spin, body, wingA, wingB)
+
+  const bakedBody = bakedCopy(body)
+  const bakedA = bakedCopy(wingA)
+  const bakedB = bakedCopy(wingB)
+  const holder = new THREE.Group()
+  holder.add(bakedBody)
+  const bodyCenter = new THREE.Box3().setFromObject(bakedBody).getCenter(new THREE.Vector3())
+  hingeWing(holder, bakedA, bodyCenter, 'wingL')
+  hingeWing(holder, bakedB, bodyCenter, 'wingR')
+
+  const span = new THREE.Box3().setFromObject(holder).getSize(new THREE.Vector3())
+  holder.scale.setScalar(PTERO_SPAN / Math.max(span.x, span.y, 0.001))
+  holder.updateMatrixWorld(true)
+  const mid = new THREE.Box3().setFromObject(bakedBody).getCenter(new THREE.Vector3())
+  holder.position.sub(mid)
+  holder.updateMatrixWorld(true)
+  attachPteroEyes(bakedBody)
+
   const template = new THREE.Group()
-  template.add(spin)
-
-  spin.updateMatrixWorld(true)
-  const bodyCenter = new THREE.Box3().setFromObject(body).getCenter(new THREE.Vector3())
-  hingeWing(spin, wingA, bodyCenter)
-  hingeWing(spin, wingB, bodyCenter)
-
-  spin.updateMatrixWorld(true)
-  const span = new THREE.Box3().setFromObject(spin).getSize(new THREE.Vector3())
-  spin.scale.setScalar(PTERO_SPAN / Math.max(span.x, span.z, 0.001))
-  spin.updateMatrixWorld(true)
-  const mid = new THREE.Box3().setFromObject(body).getCenter(new THREE.Vector3())
-  spin.position.sub(mid)
-  spin.updateMatrixWorld(true)
-  attachPteroEyes(body)
-
-  const fitted = new THREE.Box3().setFromObject(body).getSize(new THREE.Vector3())
+  template.add(holder)
+  const fitted = new THREE.Box3().setFromObject(bakedBody).getSize(new THREE.Vector3())
   template.userData.hitW = fitted.x * 0.72
   template.userData.hitH = fitted.y * 0.62
   return template
@@ -124,16 +127,131 @@ function styleFlat(root: THREE.Object3D): void {
   })
 }
 
-function hingeWing(parent: THREE.Group, wing: THREE.Object3D, bodyCenter: THREE.Vector3): void {
+function alignFacingDino(
+  spin: THREE.Group,
+  body: THREE.Object3D,
+  wingA: THREE.Object3D,
+  wingB: THREE.Object3D,
+): void {
+  const points = samplePoints(body)
+  const center = new THREE.Vector3()
+  for (const point of points) center.add(point)
+  center.multiplyScalar(1 / points.length)
+  const head = principalHead(points, center)
+  const facing = new THREE.Quaternion().setFromUnitVectors(head, new THREE.Vector3(-1, 0, 0))
+  let best = facing.clone()
+  let bestScore = -Infinity
+  for (const angle of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+    const roll = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), angle)
+    spin.quaternion.copy(facing).premultiply(roll)
+    spin.updateMatrixWorld(true)
+    const wings = new THREE.Box3().setFromObject(wingA)
+    wings.expandByObject(wingB)
+    const wingSize = wings.getSize(new THREE.Vector3())
+    const bodySize = new THREE.Box3().setFromObject(body).getSize(new THREE.Vector3())
+    const score = wingSize.y - wingSize.z * 1.4 + bodySize.x * 0.35 - bodySize.y * 0.45
+    if (score > bestScore) {
+      bestScore = score
+      best = spin.quaternion.clone()
+    }
+  }
+  spin.quaternion.copy(best)
+  spin.updateMatrixWorld(true)
+}
+
+function bakedCopy(part: THREE.Object3D): THREE.Group {
+  const group = new THREE.Group()
+  group.name = part.name
+  part.updateMatrixWorld(true)
+  part.traverse((obj) => {
+    const mesh = obj as THREE.Mesh
+    if (!mesh.isMesh) return
+    const copy = new THREE.Mesh(mesh.geometry.clone(), mesh.material)
+    copy.geometry.applyMatrix4(mesh.matrixWorld)
+    copy.castShadow = true
+    copy.receiveShadow = true
+    group.add(copy)
+  })
+  return group
+}
+
+function principalHead(points: THREE.Vector3[], center: THREE.Vector3): THREE.Vector3 {
+  const cov = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+  for (const point of points) {
+    const x = point.x - center.x
+    const y = point.y - center.y
+    const z = point.z - center.z
+    cov[0] += x * x
+    cov[1] += x * y
+    cov[2] += x * z
+    cov[3] += y * y
+    cov[4] += y * z
+    cov[5] += z * z
+  }
+  const axis = new THREE.Vector3(1, 0.2, 0.3).normalize()
+  for (let step = 0; step < 24; step += 1) {
+    const x = cov[0] * axis.x + cov[1] * axis.y + cov[2] * axis.z
+    const y = cov[1] * axis.x + cov[3] * axis.y + cov[4] * axis.z
+    const z = cov[2] * axis.x + cov[4] * axis.y + cov[5] * axis.z
+    axis.set(x, y, z).normalize()
+  }
+  let positive = 0
+  let positiveCount = 0
+  let negative = 0
+  let negativeCount = 0
+  for (const point of points) {
+    const along =
+      (point.x - center.x) * axis.x + (point.y - center.y) * axis.y + (point.z - center.z) * axis.z
+    if (along >= 0) {
+      positive += point.y
+      positiveCount += 1
+    } else {
+      negative += point.y
+      negativeCount += 1
+    }
+  }
+  const positiveMean = positiveCount ? positive / positiveCount : -Infinity
+  const negativeMean = negativeCount ? negative / negativeCount : -Infinity
+  if (positiveMean < negativeMean) axis.negate()
+  return axis
+}
+
+function samplePoints(root: THREE.Object3D): THREE.Vector3[] {
+  const points: THREE.Vector3[] = []
+  const point = new THREE.Vector3()
+  root.updateMatrixWorld(true)
+  root.traverse((obj) => {
+    const mesh = obj as THREE.Mesh
+    if (!mesh.isMesh || mesh.name === 'eye') return
+    const position = mesh.geometry.attributes.position
+    const step = Math.max(1, Math.floor(position.count / 600))
+    for (let i = 0; i < position.count; i += step) {
+      point.fromBufferAttribute(position, i)
+      mesh.localToWorld(point)
+      points.push(point.clone())
+    }
+  })
+  return points
+}
+
+function hingeWing(
+  parent: THREE.Group,
+  wing: THREE.Object3D,
+  bodyCenter: THREE.Vector3,
+  name: string,
+): void {
   const joint = nearestVertex(wing, bodyCenter)
-  const tip = new THREE.Box3().setFromObject(wing).getCenter(new THREE.Vector3())
   const pivot = new THREE.Group()
-  pivot.name = tip.x >= bodyCenter.x ? 'wingR' : 'wingL'
+  pivot.name = name
   parent.add(pivot)
   parent.updateMatrixWorld(true)
   pivot.position.copy(parent.worldToLocal(joint.clone()))
   pivot.updateMatrixWorld(true)
   pivot.attach(wing)
+  const tip = new THREE.Box3().setFromObject(wing).getCenter(new THREE.Vector3())
+  const origin = new THREE.Vector3()
+  pivot.getWorldPosition(origin)
+  pivot.userData.flapSign = tip.x - origin.x >= 0 ? 1 : -1
 }
 
 function nearestVertex(root: THREE.Object3D, target: THREE.Vector3): THREE.Vector3 {
@@ -189,7 +307,7 @@ function attachPteroEyes(body: THREE.Object3D): void {
   })
   if (!found) return
   const worldScale = Math.abs(body.getWorldScale(new THREE.Vector3()).x) || 1
-  const worldRadius = Math.min(size.y * 0.2, 0.06)
+  const worldRadius = Math.min(size.y * 0.1, 0.032)
   const radius = worldRadius / worldScale
   const spot = new THREE.Vector3(eyeX, eyeY, surface + worldRadius * 0.35)
   const origin = new THREE.Vector3()

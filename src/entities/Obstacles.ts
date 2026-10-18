@@ -119,11 +119,9 @@ export class Obstacles {
   private sync(item: Item, dt: number, speed: number): void {
     if (item.kind === 'ptero') {
       item.phase += dt * (6.4 + speed * 0.18)
-      const flap = Math.sin(item.phase)
-      if (item.wingL && item.wingR) {
-        item.wingL.rotation.z = 0.2 + flap * 0.7
-        item.wingR.rotation.z = -0.2 - flap * 0.7
-      }
+      const flap = Math.sin(item.phase) * 0.85
+      if (item.wingL) item.wingL.rotation.z = flap * numberData(item.wingL.userData.flapSign, 1)
+      if (item.wingR) item.wingR.rotation.z = flap * numberData(item.wingR.userData.flapSign, -1)
       item.group.position.set(item.x, item.baseY + Math.sin(item.phase * 0.5) * 0.06, 0)
       return
     }
