@@ -68,6 +68,11 @@ export class Dino {
     scene.add(this.blob)
   }
 
+  dispose(): void {
+    this.root.removeFromParent()
+    this.blob.removeFromParent()
+  }
+
   reset(): void {
     this.y = 0
     this.vy = 0

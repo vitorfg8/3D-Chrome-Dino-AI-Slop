@@ -17,14 +17,14 @@ export class Spawner {
     this.last = null
   }
 
-  pull(distance: number, speed: number, score: number): SpawnOrder | null {
+  pull(distance: number, speed: number, score: number, extraGap = 0): SpawnOrder | null {
     if (distance < this.nextDistance) return null
     const order = this.roll(speed, score)
     const reaction = Math.max(
       CONFIG.minReaction,
       CONFIG.baseReaction - (speed - CONFIG.initialSpeed) * CONFIG.reactionDecay,
     )
-    this.nextDistance = distance + speed * reaction + clusterWidth(order) + CONFIG.gapPadding
+    this.nextDistance = distance + speed * reaction + clusterWidth(order) + CONFIG.gapPadding + extraGap
     this.last = order.kind
     return order
   }

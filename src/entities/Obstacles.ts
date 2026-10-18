@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { CONFIG, overlap, type Aabb } from '../game/config'
 import type { SpawnOrder } from '../game/Spawner'
 import { makeCactus } from './cactus'
+import { makeEye } from './eyes'
 
 export type ObstacleKind = 'cactus-small' | 'cactus-large' | 'ptero'
 
@@ -39,11 +40,6 @@ const pteroBeak = new THREE.MeshStandardMaterial({
   color: 0xe7d3a4,
   roughness: 0.45,
   metalness: 0.04,
-})
-
-const pteroDark = new THREE.MeshStandardMaterial({
-  color: 0x1a120e,
-  roughness: 0.4,
 })
 
 export class Obstacles {
@@ -189,40 +185,42 @@ export class Obstacles {
 
 function buildPtero(): { root: THREE.Group; wingL: THREE.Group; wingR: THREE.Group } {
   const root = new THREE.Group()
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.38, 4, 8), pteroBody)
-  body.rotation.z = -Math.PI / 2
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.09, 0.36, 4, 8), pteroBody)
+  body.rotation.z = Math.PI / 2
   body.castShadow = true
   root.add(body)
 
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8), pteroBody)
-  head.scale.set(1.15, 0.85, 0.9)
-  head.position.set(0.32, 0.06, 0)
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 10), pteroBody)
+  head.scale.set(1.15, 0.82, 0.9)
+  head.position.set(-0.32, 0.05, 0)
   head.castShadow = true
   root.add(head)
 
-  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.22, 6), pteroBeak)
-  beak.rotation.z = -Math.PI / 2
-  beak.position.set(0.5, 0.04, 0)
+  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.22, 6), pteroBeak)
+  beak.rotation.z = Math.PI / 2
+  beak.position.set(-0.52, 0.03, 0)
   beak.castShadow = true
   root.add(beak)
 
-  const crest = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.12, 5), pteroWing)
-  crest.position.set(0.26, 0.16, 0)
-  crest.rotation.z = 0.5
+  const crest = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.14, 5), pteroWing)
+  crest.position.set(-0.22, 0.16, 0)
+  crest.rotation.z = 2.4
   crest.castShadow = true
   root.add(crest)
 
-  const eye = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 6), pteroDark)
-  eye.position.set(0.38, 0.1, 0.06)
-  root.add(eye)
+  const pupil = new THREE.Vector3(0.018, 0, 0)
+  const eyeL = makeEye(0.028, pupil)
+  const eyeR = makeEye(0.028, pupil)
+  eyeL.position.set(-0.36, 0.09, 0.055)
+  eyeR.position.set(-0.36, 0.09, -0.055)
+  root.add(eyeL, eyeR)
 
-  const wingGeo = wingGeometry()
   const wingL = new THREE.Group()
   const wingR = new THREE.Group()
-  wingL.position.set(-0.02, 0.06, 0.06)
-  wingR.position.set(-0.02, 0.06, -0.06)
-  const left = new THREE.Mesh(wingGeo, pteroWing)
-  const right = new THREE.Mesh(wingGeo, pteroWing)
+  wingL.position.set(-0.04, 0.08, 0.04)
+  wingR.position.set(-0.04, 0.08, -0.04)
+  const left = new THREE.Mesh(wingGeometry(), pteroWing)
+  const right = new THREE.Mesh(wingGeometry(), pteroWing)
   left.castShadow = true
   right.castShadow = true
   wingL.add(left)
@@ -235,12 +233,11 @@ function buildPtero(): { root: THREE.Group; wingL: THREE.Group; wingR: THREE.Gro
 function wingGeometry(): THREE.BufferGeometry {
   const shape = new THREE.Shape()
   shape.moveTo(0, 0)
-  shape.lineTo(-0.58, 0.46)
-  shape.lineTo(-0.78, 0.16)
-  shape.lineTo(-0.22, 0.02)
-  shape.lineTo(0.1, -0.02)
+  shape.lineTo(0.08, 0.42)
+  shape.lineTo(0.46, 0.22)
+  shape.lineTo(0.38, 0.02)
   shape.closePath()
-  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.04, bevelEnabled: false })
-  geo.translate(0, 0, -0.02)
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.035, bevelEnabled: false })
+  geo.translate(0, 0, -0.017)
   return geo
 }

@@ -1,15 +1,19 @@
-import { CONFIG } from './config'
-import { Spawner } from './Spawner'
+import type { SpeciesId } from '../assets/species'
 import { Dino } from '../entities/Dino'
 import { Obstacles } from '../entities/Obstacles'
-import { Desert } from '../world/Desert'
+import { SpeciesDino } from '../entities/SpeciesDino'
 import type { Stage } from '../render/Stage'
 import { Hud, type HudMode } from '../ui/Hud'
+import { Desert } from '../world/Desert'
+import { CONFIG } from './config'
+import { Spawner } from './Spawner'
 
 type Mode = 'waiting' | 'running' | 'crashed'
 
+type Runner = Dino | SpeciesDino
+
 export class Game {
-  private readonly dino: Dino
+  private dino: Runner
   private readonly obstacles: Obstacles
   private readonly desert: Desert
   private readonly spawner = new Spawner()
@@ -17,6 +21,8 @@ export class Game {
   private readonly input = new Input()
 
   private mode: Mode = 'waiting'
+  private species: SpeciesId = 'trex'
+  private picking = false
   private speed = 0
   private distance = 0
   private score = 0
@@ -42,7 +48,9 @@ export class Game {
       return
     }
 
-    if (this.mode === 'waiting') {
+    if (this.picking) {
+      this.dino.update(dt, 'idle', false, false, 0)
+    } else if (this.mode === 'waiting') {
       if (input.start) this.begin()
       else this.dino.update(dt, 'idle', false, false, 0)
     } else if (this.mode === 'crashed') {
@@ -55,7 +63,7 @@ export class Game {
       this.score = Math.floor(this.distance * CONFIG.scoreScale)
       this.dino.update(dt, 'run', input.jump, input.duck, this.speed)
       this.obstacles.update(dt, this.speed)
-      const order = this.spawner.pull(this.distance, this.speed, this.score)
+      const order = this.spawner.pull(this.distance, this.speed, this.score, this.bodyGap())
       if (order) this.obstacles.spawn(order, CONFIG.spawnX)
       if (this.obstacles.hits(this.dino.hitboxes())) this.crash()
       const mark = Math.floor(this.score / CONFIG.blinkEvery)
@@ -67,13 +75,48 @@ export class Game {
       if (this.dino.onGround) this.desert.puff(CONFIG.dinoX, this.dino.ducking ? this.speed * 0.25 : this.speed, dt)
     }
 
-    const scroll = this.mode === 'running' ? this.speed : 0
+    const scroll = this.mode === 'running' && !this.picking ? this.speed : 0
     this.desert.update(dt, scroll)
     this.updateNight(dt)
     this.stage.setNight(this.night)
     this.desert.setNight(this.night)
     this.hud.render(this.mode satisfies HudMode, this.score, this.highScore, this.night > 0.45, this.flashScore)
     this.stage.render(dt)
+  }
+
+  preview(id: SpeciesId): void {
+    this.picking = true
+    this.use(id)
+  }
+
+  confirm(id: SpeciesId): void {
+    this.picking = false
+    this.use(id)
+    this.mode = 'waiting'
+    this.speed = 0
+    this.night = 0
+    this.obstacles.clear()
+    this.dino.reset()
+  }
+
+  use(id: SpeciesId): void {
+    this.species = id
+    this.mount(id)
+  }
+
+  currentSpecies(): SpeciesId {
+    return this.species
+  }
+
+  private mount(id: SpeciesId): void {
+    this.dino.dispose()
+    this.dino = id === 'trex' ? new Dino(this.stage.scene) : new SpeciesDino(this.stage.scene, id)
+    this.dino.reset()
+  }
+
+  private bodyGap(): number {
+    if (this.species !== 'apatosaurus' || !(this.dino instanceof SpeciesDino)) return 0
+    return Math.max(0, this.dino.bodyLength - 4) * 0.55
   }
 
   private begin(): void {
@@ -133,6 +176,8 @@ class Input {
       if (isDuck(event)) this.keyboardDuck = false
     })
     window.addEventListener('pointerdown', (event) => {
+      const target = event.target
+      if (target instanceof Element && target.closest('#picker, #swap, #lang')) return
       this.pointerEdge = true
       this.pointerUp = event.clientY < window.innerHeight * 0.5
       if (!this.pointerUp) this.pointerDuck = true
